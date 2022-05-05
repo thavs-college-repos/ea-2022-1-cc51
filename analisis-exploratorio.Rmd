@@ -229,7 +229,6 @@ ggplot(hb_data, aes(arrival_date_month, fill = hotel)) +
 reserve_children <- hb_data$children[hb_data$children < 5]
 reserve_children <- reserve_children[reserve_children != 0]
 
-
 barplot(table(reserve_children), 
         main="Ninos/Babes en reservas",
         xlab= "Kids",
@@ -255,4 +254,22 @@ barplot(table(reserve_babies),
         beside=TRUE
         ) + theme_bw()
 ```
+
+```{r}
+#Espacios de estacionamiento por Hotel
+reserve_children <- hb_data$children[hb_data$children < 5]
+
+parking_space_hotel1 <- hb_data%>% filter(hotel == 'Resort Hotel' & required_car_parking_spaces > 0 )%>% summarise(n())
+parking_space_hotel2 <- hb_data%>% filter(hotel == 'City Hotel' & required_car_parking_spaces > 0 )%>% summarise(n())
+parking <- tribble(
+  ~Hotel_Type,     ~Parking_space,
+  "Resort Hotel" , 	5490, 
+  "City Hotel" , 1926
+)
+
+ggplot(data=parking) + geom_bar(mapping = aes(x = Hotel_Type, y =Parking_space), stat = "identity")
+
+```
+
+
 
