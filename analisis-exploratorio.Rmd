@@ -257,10 +257,9 @@ barplot(table(reserve_babies),
 
 ```{r}
 #Espacios de estacionamiento por Hotel
-reserve_children <- hb_data$children[hb_data$children < 5]
 
-parking_space_hotel1 <- hb_data%>% filter(hotel == 'Resort Hotel' & required_car_parking_spaces > 0 )%>% summarise(n())
-parking_space_hotel2 <- hb_data%>% filter(hotel == 'City Hotel' & required_car_parking_spaces > 0 )%>% summarise(n())
+parking_space_hotel1 <- hb_data%>% filter(hotel == 'Resort Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - Resort Hotel")
+parking_space_hotel2 <- hb_data%>% filter(hotel == 'City Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - City Hotel")
 parking <- tribble(
   ~Hotel_Type,     ~Parking_space,
   "Resort Hotel" , 	5490, 
@@ -269,6 +268,40 @@ parking <- tribble(
 
 ggplot(data=parking) + geom_bar(mapping = aes(x = Hotel_Type, y =Parking_space), stat = "identity")
 
+```
+
+```{r}
+January <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'January' ) %>% summarise(n())
+
+February <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'Frebruary' ) %>% summarise(n())
+
+March <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'March' ) %>% summarise(n())
+
+April <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'April' ) %>% summarise(n())
+
+May <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'May' ) %>% summarise(n())
+
+June <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'June' ) %>% summarise(n())
+
+July <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'July' ) %>% summarise(n())
+
+August <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'August' ) %>% summarise(n())
+
+September <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'September' ) %>% summarise(n())
+
+October <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'October' ) %>% summarise(n())
+
+November <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'November' ) %>% summarise(n())
+
+December <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'December' ) %>% summarise(n())
+```
+
+
+```{r}
+cancelled <- subset(hb_data, reservation_status == "Canceled")
+cmonths <- sort(substring(hb_data$arrival_date_month, first = 1 ))
+barplot(sort(table(cmonths)), horiz=TRUE, main="Cancelations per month", 
+        xlab="Bookings", ylab="Month")
 ```
 
 
