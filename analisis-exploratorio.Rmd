@@ -270,32 +270,6 @@ ggplot(data=parking) + geom_bar(mapping = aes(x = Hotel_Type, y =Parking_space),
 
 ```
 
-```{r}
-January <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'January' ) %>% summarise(n())
-
-February <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'Frebruary' ) %>% summarise(n())
-
-March <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'March' ) %>% summarise(n())
-
-April <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'April' ) %>% summarise(n())
-
-May <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'May' ) %>% summarise(n())
-
-June <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'June' ) %>% summarise(n())
-
-July <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'July' ) %>% summarise(n())
-
-August <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'August' ) %>% summarise(n())
-
-September <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'September' ) %>% summarise(n())
-
-October <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'October' ) %>% summarise(n())
-
-November <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'November' ) %>% summarise(n())
-
-December <- hb_data%>% filter(is_canceled == 1 & arrival_date_month == 'December' ) %>% summarise(n())
-```
-
 
 ```{r}
 cancelled <- subset(hb_data, reservation_status == "Canceled")
