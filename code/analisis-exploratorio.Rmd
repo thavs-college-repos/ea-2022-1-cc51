@@ -6,13 +6,12 @@ output: html_notebook
 # Cargar las librerias relevantes
 library(dplyr)
 library(ggplot2)
-library(tidyr)
 
 ```
 
 
 # Carga de datos
-Cargamos todos los datos en el data set `hotel_booking_missing.csv`. Usamos los parametros `header = TRUE` para indicar que nuestro dataset tiene una columna inicial con la descripttion de los datos y el parametro `stringAsFactors = False` para ... .
+Cargamos todos los datos en el data set `hotel_booking_missing.csv`. Usamos los parametros `header = TRUE` para indicar que nuestro dataset tiene una columna inicial con la descripttion de los datos y el parametro `stringAsFactors = True` donde todas las columnas con el tipo char son factor.  
 
 ```{r}
 hotel_bookings <- read.csv2("../data/hotel_bookings_miss.csv", header=TRUE, stringsAsFactors = TRUE)
@@ -120,12 +119,14 @@ hb_nadate_year
 copy_xx[is.na(copy_xx$arrival_date_year),]$arrival_date_year <- format(hb_nadate_year$reservation_status - hb_nadate_year$lead_time, format = "%Y")
 
 ```
+### Modificar datos vacios (children and babies)
 ```{r}
 hb_data[is.na(hb_data$children ) | is.na(hb_data$babies ),]
 hb_data[is.na(hb_data$children ),]$children <- 0
 hb_data[is.na(hb_data$babies ),]$babies <- 0
 ```
 
+### Modificar datos vacios (reservation_status)
 ```{r}
 reserve_status <- hb_data[is.na(hb_data$reservation_status_date),]$reservation_status
 bp <- barplot(table(reserve_status)) + theme_bw()
@@ -159,23 +160,7 @@ update_status <- temp_hb[is.na(temp_hb$reservation_status_date),]$reservation_st
 bp <- barplot(table(update_status)) + theme_bw()
 ```
 
-
-```{r}
-copy <- temp_hb
-
-update_copy <- copy[is.na(copy$reservation_status_date),]$reservation_status
-bp <- barplot(table(update_copy))
-
-reserve = copy["reservation_status_date"]
-
-copy <- copy %>% fill(reservation_status_date)
-copy
-
-update_copy <- copy[is.na(copy$reservation_status_date),]$reservation_status
-bp <- barplot(table(update_copy))
-```
-
-## Cantidad de datos por tipos de hotel
+### Cantidad de datos por tipos de hotel
 ```{r}
 table(hb_data$hotel)
 
@@ -188,6 +173,7 @@ ggplot(data = hb_data, aes(x = hotel)) +
   theme_classic() + scale_color_brewer(palette = "Set2")
 ```
 
+### Reservas por mes 
 ```{r}
 # Reorganizar mes correctamente
 hb_data$arrival_date_month <-
@@ -202,7 +188,8 @@ ggplot(data = hb_data, aes(x = arrival_date_month)) +
                       y = "Reservas") +
   theme_classic()
 ```
-Data es de pro
+
+### Reservas por mes por tipo de hotel
 ```{r}
 ggplot(hb_data, aes(arrival_date_month, fill = hotel)) +
   geom_bar(position = position_dodge()) +
@@ -210,8 +197,9 @@ ggplot(hb_data, aes(arrival_date_month, fill = hotel)) +
        x = "Month",
        y = "Reservas") + theme_bw()
 ```
+
+### Reservas con niños y bebes
 ```{r}
-# Average daily rate by Hotel Type
 reserve_children <- hb_data$children
 reserve_babies <- hb_data$babies
 
@@ -240,9 +228,9 @@ bp <- barplot((kids_table * 100) / nrow(hb_data),
 
 ```
 
-```{r}
-#Espacios de estacionamiento por Hotel
 
+### Espacios de estacionamiento por Hotel
+```{r}
 parking_space_hotel1 <- hb_data%>% filter(hotel == 'Resort Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - Resort Hotel")
 parking_space_hotel2 <- hb_data%>% filter(hotel == 'City Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - City Hotel")
 parking <- tribble(
@@ -255,7 +243,7 @@ ggplot(data=parking) + geom_bar(mapping = aes(x = Hotel_Type, y =Parking_space),
 
 ```
 
-
+### Cancelaciones al mes
 ```{r}
 cancelled <- subset(hb_data, reservation_status == "Canceled")
 cmonths <- sort(substring(hb_data$arrival_date_month, first = 1 ))
