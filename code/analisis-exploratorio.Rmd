@@ -1,0 +1,267 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+# Cargar las librerias relevantes
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+```
+
+
+# Carga de datos
+Cargamos todos los datos en el data set `hotel_booking_missing.csv`. Usamos los parametros `header = TRUE` para indicar que nuestro dataset tiene una columna inicial con la descripttion de los datos y el parametro `stringAsFactors = False` para ... .
+
+```{r}
+hotel_bookings <- read.csv2("../data/hotel_bookings_miss.csv", header=TRUE, stringsAsFactors = TRUE)
+
+names(hotel_bookings)[names(hotel_bookings) == 'ï..hotel'] <- 'hotel'
+```
+
+# Inspeccionar Datos
+
+## Visualizar
+
+```{r}
+head(hotel_bookings, 10)
+
+tail(hotel_bookings, 10)
+```
+
+## Tipos de datos
+
+```{r}
+names(hotel_bookings)
+str(hotel_bookings)
+```
+```{r}
+summary(hotel_bookings)
+```
+
+## Modificar los tipos
+Modificar el tipo de los datos a tipos de datos mas relevantes
+
+```{r}
+hb_data <- hotel_bookings
+hb_data$is_canceled <- as.factor(hb_data$is_canceled)
+
+hb_data$arrival_date_week_number <- as.factor(hb_data$arrival_date_week_number)
+hb_data$arrival_date_year <- as.factor(hb_data$arrival_date_year)
+hb_data$arrival_date_day_of_month  <- as.factor(hb_data$arrival_date_day_of_month)
+
+hb_data$is_repeated_guest <- as.factor(hb_data$is_repeated_guest)
+
+hb_data$reservation_status_date <- as.Date(hb_data$reservation_status_date, "%m/%d/%Y")
+
+str(hb_data)
+```
+
+
+# PRE-PROCESAR DATOS
+## Identificar datos faltantes
+```{r}
+columnns_NA_values <- function(x){
+ count = 0
+
+ for(i in 1:ncol(x)) {
+   if (colSums(is.na(x[i]))){
+      cat("NA values:",colSums(is.na(x[i])), "   \tColumn",colnames(x[i]),"\n")
+      count = count + 1
+   }
+ }
+ 
+ cat("Columns with NA values: ", count, "\n\n")
+}
+
+columnns_wempty_values <- function(x){
+ count = 0
+
+ for(i in 1:ncol(x)) {
+   if (isTRUE(colSums(x[i]==""))){
+      cat("NA values:",colSums(x[i]==""), "   \tColumn",colnames(x[i]),"\n")
+      count = count + 1
+   }
+ }
+ 
+ cat("Columns with empty values: ", count, "\n\n")
+}
+
+columnns_wnull_values <- function(x){
+ count = 0
+
+ for(i in 1:ncol(x)) {
+   if (sum(is.null(x[i]))){
+      cat("NA values:" ,colSums(is.null(x[i])), "   \tColumn",colnames(x[i]),"\n")
+      count = count + 1
+   }
+ }
+ 
+ cat("Columns with NULL values: ", count)
+}
+
+
+columnns_NA_values(hb_data)
+columnns_wempty_values(hb_data)
+columnns_wnull_values(hb_data)
+```
+Logramos identificar que existen 10 columnas con valores faltantes y ninguna de las columnas tiene valores vacios.
+
+Las pregunstas que deseamos responder trabajan con las fechas de llegar
+
+## Modicar datos faltantes
+```{r}
+copy_xx <- hb_data
+
+hb_nadate_year <- copy_xx[is.na(copy_xx$arrival_date_year),] # no clue
+hb_nadate_year
+
+copy_xx[is.na(copy_xx$arrival_date_year),]$arrival_date_year <- format(hb_nadate_year$reservation_status - hb_nadate_year$lead_time, format = "%Y")
+
+```
+```{r}
+hb_data[is.na(hb_data$children ) | is.na(hb_data$babies ),]
+hb_data[is.na(hb_data$children ),]$children <- 0
+hb_data[is.na(hb_data$babies ),]$babies <- 0
+```
+
+```{r}
+reserve_status <- hb_data[is.na(hb_data$reservation_status_date),]$reservation_status
+bp <- barplot(table(reserve_status)) + theme_bw()
+
+temp_hb <- hb_data
+
+#Update reservation_status == Check-Out
+check_out_bool <- is.na(hb_data$reservation_status_date) & hb_data$reservation_status == 'Check-Out' 
+nd_check_out <- hb_data[check_out_bool, ]
+
+reservation_date <- paste(nd_check_out$arrival_date_year, nd_check_out$arrival_date_month, nd_check_out$arrival_date_day_of_month)
+last_update <- as.Date(reservation_date, format = "%Y %B %d") + nd_check_out$stays_in_weekend_nights + nd_check_out$stays_in_week_nights
+
+temp_hb[check_out_bool, ]$reservation_status_date <- last_update
+
+
+#Update reservation_status == No-Show
+no_show_bool <- is.na(hb_data$reservation_status_date) & hb_data$reservation_status == 'No-Show' 
+nd_no_show <- hb_data[no_show_bool, ]
+
+reservation_date <- paste(nd_no_show$arrival_date_year, nd_no_show$arrival_date_month, nd_no_show$arrival_date_day_of_month)
+last_update <- as.Date(reservation_date, format = "%Y %B %d") + nd_no_show$stays_in_weekend_nights + nd_no_show$stays_in_week_nights
+
+temp_hb[no_show_bool, ]$reservation_status_date <- last_update
+
+#Update reservation_status == Canceled
+canceled_bool <- is.na(hb_data$reservation_status_date) & hb_data$reservation_status == 'Canceled' 
+temp_hb <- temp_hb %>% fill(reservation_status_date)
+
+update_status <- temp_hb[is.na(temp_hb$reservation_status_date),]$reservation_status
+bp <- barplot(table(update_status)) + theme_bw()
+```
+
+
+```{r}
+copy <- temp_hb
+
+update_copy <- copy[is.na(copy$reservation_status_date),]$reservation_status
+bp <- barplot(table(update_copy))
+
+reserve = copy["reservation_status_date"]
+
+copy <- copy %>% fill(reservation_status_date)
+copy
+
+update_copy <- copy[is.na(copy$reservation_status_date),]$reservation_status
+bp <- barplot(table(update_copy))
+```
+
+## Cantidad de datos por tipos de hotel
+```{r}
+table(hb_data$hotel)
+
+# Visualize the distribution
+ggplot(data = hb_data, aes(x = hotel)) +
+  geom_bar(stat = "count") +
+  labs(title = "Booking Request by Hotel type",
+       x = "Hotel type",
+       y = "No. of bookings") +
+  theme_classic() + scale_color_brewer(palette = "Set2")
+```
+
+```{r}
+# Reorganizar mes correctamente
+hb_data$arrival_date_month <-
+  factor(hb_data$arrival_date_month, levels = month.name)
+
+# Visualize Hotel traffic on Monthly basis
+ggplot(data = hb_data, aes(x = arrival_date_month)) +
+  geom_bar(fill = "pink") +
+  geom_text(stat = "count", aes(label = ..count..), hjust = 1) +
+  coord_flip() + labs(title = "Reservas por mes",
+                      x = "Mes",
+                      y = "Reservas") +
+  theme_classic()
+```
+Data es de pro
+```{r}
+ggplot(hb_data, aes(arrival_date_month, fill = hotel)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Reservas por mes por hoteles",
+       x = "Month",
+       y = "Reservas") + theme_bw()
+```
+```{r}
+# Average daily rate by Hotel Type
+reserve_children <- hb_data$children
+reserve_babies <- hb_data$babies
+
+reserve_kids <- reserve_children + reserve_babies
+
+kids_table <- table(reserve_kids[reserve_kids < 9])
+bp <- barplot((kids_table * 100) / nrow(hb_data), 
+        main="Frecuencia de Niños y bebes en reservas",
+        xlab= "Cantidad de Niños",
+        col=rainbow(6),
+        ylim=c(0,100),
+        ylab="Frecuencia",
+        beside=TRUE
+    ) + theme_bw()
+
+kids_table <- table(reserve_kids[reserve_kids != 0])
+bp <- barplot((kids_table * 100) / nrow(hb_data), 
+        main="Frecuencia de Niños y bebes en reservas mayor a 0",
+        xlab= "Cantidad de Niños",
+        col=rainbow(6),
+        ylim=c(0,6),
+        ylab="Frecuencia",
+        beside=TRUE
+    ) + theme_bw()
+
+
+```
+
+```{r}
+#Espacios de estacionamiento por Hotel
+
+parking_space_hotel1 <- hb_data%>% filter(hotel == 'Resort Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - Resort Hotel")
+parking_space_hotel2 <- hb_data%>% filter(hotel == 'City Hotel' & required_car_parking_spaces > 0 )%>% summarise("Parking Space - City Hotel")
+parking <- tribble(
+  ~Hotel_Type,     ~Parking_space,
+  "Resort Hotel" , 	5490, 
+  "City Hotel" , 1926
+)
+
+ggplot(data=parking) + geom_bar(mapping = aes(x = Hotel_Type, y =Parking_space), stat = "identity")
+
+```
+
+
+```{r}
+cancelled <- subset(hb_data, reservation_status == "Canceled")
+cmonths <- sort(substring(hb_data$arrival_date_month, first = 1 ))
+barplot(sort(table(cmonths)), horiz=TRUE, main="Cancelations per month", 
+        xlab="Bookings", ylab="Month")
+```
+
+
+
